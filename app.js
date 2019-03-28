@@ -10,7 +10,8 @@ var mysqlConnection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'inventory'
+    database: 'inventory',
+    multipleStatements: true
 });
 
 mysqlConnection.connect((err)=>{
@@ -33,10 +34,52 @@ app.get('/items', (req,res) => {
     })
 });
 
+//Get an item using id
 app.get('/items/:id', (req,res) => {
     mysqlConnection.query('SELECT * FROM items WHERE id = ?',[req.params.id],(err, rows, fields) => {
         if(!err)
             res.send(rows);
+        else
+            console.log(err);
+    })
+});
+
+//Delete an item using id
+app.delete('/items/:id', (req,res) => {
+    mysqlConnection.query('DELETE FROM items WHERE id = ?',[req.params.id],(err, rows, fields) => {
+        if(!err)
+            res.send('Item has been deleted');
+        else
+            console.log(err);
+    })
+});
+
+//Insert an item using id
+app.post('/items', (req,res) => {
+    let item = req.body;
+    var sql = "SET @id = ?;SET @name = ?;SET @qty = ?;SET @amount = ?; \
+    CALL AddUpdateItems(@id,@name,@qty,@amount);";
+
+    mysqlConnection.query(sql, [item.id, item.name, item.qty, item.amount],(err, rows, fields) => {
+        if(!err)
+            rows.forEach(element => {
+                if(element.constructor == Array)
+                res.send('Inserted new item: ' + element[0].name);
+            })
+        else
+            console.log(err);
+    })
+});
+
+//Update an item using id
+app.put('/items', (req,res) => {
+    let item = req.body;
+    var sql = "SET @id = ?;SET @name = ?;SET @qty = ?;SET @amount = ?; \
+    CALL AddUpdateItems(@id,@name,@qty,@amount);";
+
+    mysqlConnection.query(sql, [item.id, item.name, item.qty, item.amount],(err, rows, fields) => {
+        if(!err)
+            res.send("Item updated successfully")
         else
             console.log(err);
     })
